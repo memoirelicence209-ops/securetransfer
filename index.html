@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureTransfer — Transferencia segura</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+
+  body {
+    background: #f7f8fa;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    color: #0a0e1a;
+  }
+
+  .wrapper { width: 100%; max-width: 440px; }
+
+  /* LOGO */
+  .brand {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 20px;
+  }
+  .brand-logo {
+    width: 34px; height: 34px;
+    background: #00915A; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 15px;
+  }
+  .brand-name { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+  .brand-name span { color: #00915A; }
+
+  /* CARTE */
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 1px 3px rgba(10,14,26,0.04), 0 10px 40px rgba(10,14,26,0.06);
+    border: 1px solid #eef0f3;
+  }
+
+  /* PROGRESSION */
+  .progress {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    position: relative; margin-bottom: 32px; padding: 0 10px;
+  }
+  .progress::before {
+    content:''; position: absolute;
+    top: 14px; left: 30px; right: 30px;
+    height: 1.5px; background: #e8eaed;
+  }
+  .progress-fill {
+    position: absolute; top: 14px; left: 30px;
+    height: 1.5px; background: #00915A;
+    transition: width .6s ease; width: 0;
+  }
+  .pstep {
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    position: relative; z-index: 2; flex: 1;
+  }
+  .pcircle {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #fff; border: 1.5px solid #e0e3e8; color: #a0a6b0;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .3s ease;
+  }
+  .pcircle.active, .pcircle.done { background: #00915A; border-color: #00915A; color: #fff; }
+  .plabel {
+    font-size: 10px; font-weight: 600; color: #a0a6b0;
+    letter-spacing: .3px; text-transform: uppercase;
+  }
+  .pstep.active .plabel, .pstep.done .plabel { color: #00915A; }
+
+  /* TITRES */
+  .title {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.5px; color: #0a0e1a;
+    margin-bottom: 6px;
+  }
+  .title.center { text-align: center; }
+  .subtitle {
+    font-size: 13px; color: #6b7280;
+    line-height: 1.5; margin-bottom: 24px;
+  }
+  .subtitle.center { text-align: center; }
+
+  /* FORM */
+  .field { margin-bottom: 15px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: #374151; margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%; padding: 13px 14px;
+    border: 1.5px solid #e5e7eb; border-radius: 10px;
+    font-size: 14.5px; font-family: inherit;
+    color: #0a0e1a; background: #fff; outline: none;
+    transition: border .2s ease, box-shadow .2s ease;
+  }
+  .field input:focus, .field select:focus {
+    border-color: #00915A;
+    box-shadow: 0 0 0 3px rgba(0,145,90,0.10);
+  }
+  .field input::placeholder { color: #b8bec8; }
+
+  /* BANQUE */
+  .bank-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .bank-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fafbfc;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .bank-card:hover { border-color: #00915A; background: #fff; }
+  .bank-card.selected {
+    border-color: #00915A;
+    background: #f0fdf7;
+    box-shadow: 0 0 0 3px rgba(0,145,90,0.10);
+  }
+  .bank-logo {
+    width: 42px; height: 42px;
+    background: #00915A; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 12px;
+    flex-shrink: 0;
+  }
+  .bank-name { font-size: 14px; font-weight: 700; color: #0a0e1a; }
+  .bank-desc { font-size: 11.5px; color: #6b7280; margin-top: 2px; }
+
+  /* MONTANT */
+  .amount {
+    background: #f7f8fa;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px; text-align: center;
+    margin: 20px 0;
+  }
+  .amount-label {
+    font-size: 11px; font-weight: 600;
+    color: #6b7280; letter-spacing: 1.2px;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .amount-value {
+    font-size: 28px; font-weight: 800;
+    color: #0a0e1a; letter-spacing: -1px;
+  }
+
+  /* BOUTONS */
+  .btn {
+    width: 100%; padding: 14px;
+    background: #00915A; color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 14.5px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    transition: background .2s ease; margin-top: 4px;
+  }
+  .btn:hover { background: #007a4b; }
+
+  .btn-danger {
+    background: #dc2626; font-size: 15px; padding: 16px;
+  }
+  .btn-danger:hover { background: #b91c1c; }
+
+  /* CHARGEMENT ROUGE */
+  .loading-screen { text-align: center; padding: 50px 20px; }
+
+  .dotted-loader-red {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 24px;
+    border-radius: 50%;
+    border: 3px dotted #dc2626;
+    animation: spin 1.5s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-title {
+    font-size: 16px; font-weight: 700;
+    color: #0a0e1a; margin-bottom: 6px;
+  }
+  .loading-sub { font-size: 12.5px; color: #6b7280; }
+
+  /* SUCCÈS */
+  .success-check {
+    width: 72px; height: 72px;
+    border-radius: 50%; background: #00915A;
+    color: #fff; font-size: 34px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    animation: pop .4s ease;
+  }
+  @keyframes pop {
+    0% { transform: scale(0); }
+    70% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+
+  .balance {
+    background: #0a0e1a;
+    border-radius: 14px;
+    padding: 26px 20px;
+    color: #fff; text-align: center;
+    margin: 20px 0;
+  }
+  .balance-label {
+    font-size: 11px; letter-spacing: 1.8px;
+    text-transform: uppercase; opacity: .6;
+    margin-bottom: 8px;
+  }
+  .balance-value {
+    font-size: 32px; font-weight: 800;
+    letter-spacing: -1.2px;
+  }
+
+  /* PAGE FRAIS */
+  .status-banner {
+    background: linear-gradient(135deg, #fff7ed, #ffedd5);
+    border: 1px solid #fed7aa;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .status-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #f59e0b;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin: 0 auto 10px;
+  }
+  .status-title {
+    font-size: 16px; font-weight: 700;
+    color: #92400e; margin-bottom: 4px;
+  }
+  .status-desc {
+    font-size: 12.5px; color: #92400e; opacity: .85;
+    line-height: 1.5;
+  }
+
+  .fees-title {
+    font-size: 12px; font-weight: 700;
+    color: #6b7280; letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .fees-list {
+    display: flex; flex-direction: column;
+    gap: 8px; margin-bottom: 18px;
+  }
+
+  .fee-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid #eef0f3;
+    border-radius: 12px;
+    transition: all .2s ease;
+  }
+  .fee-row:hover { border-color: #00915A; }
+
+  .fee-left { display: flex; align-items: center; gap: 12px; }
+
+  .fee-avatar {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: #f0fdf7;
+    color: #00915A;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+    border: 1.5px solid #a7f3d0;
+    flex-shrink: 0;
+  }
+  .fee-name { font-size: 13.5px; font-weight: 700; color: #0a0e1a; }
+  .fee-role { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .fee-amount { font-size: 14px; font-weight: 800; color: #dc2626; }
+
+  .total-card {
+    background: #0a0e1a;
+    border-radius: 14px;
+    padding: 20px;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .total-label {
+    font-size: 11px; letter-spacing: 1.8px;
+    text-transform: uppercase; opacity: .6;
+    margin-bottom: 8px;
+  }
+  .total-value {
+    font-size: 26px; font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .total-note {
+    font-size: 11.5px; opacity: .6;
+    margin-top: 6px;
+  }
+
+  .info-note {
+    background: #f7f8fa;
+    border-left: 3px solid #00915A;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .info-note strong { color: #00915A; }
+
+  /* CODE */
+  .code-input {
+    text-align: center !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    letter-spacing: 12px !important;
+    padding: 18px !important;
+  }
+  .error {
+    color: #dc2626; font-size: 12.5px;
+    text-align: center; margin-top: 10px;
+    font-weight: 600;
+  }
+
+  .hidden { display: none !important; }
+
+  .footer {
+    text-align: center; font-size: 11px;
+    color: #a0a6b0; margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <div class="brand">
+    <div class="brand-logo">S</div>
+    <div class="brand-name">Secure<span>Transfer</span></div>
+  </div>
+
+  <div class="card">
+
+    <!-- Progression -->
+    <div class="progress" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+      <div class="pstep active" data-step="1">
+        <div class="pcircle">1</div><div class="plabel">Datos</div>
+      </div>
+      <div class="pstep" data-step="2">
+        <div class="pcircle">2</div><div class="plabel">Banco</div>
+      </div>
+      <div class="pstep" data-step="3">
+        <div class="pcircle">3</div><div class="plabel">Cuenta</div>
+      </div>
+      <div class="pstep" data-step="4">
+        <div class="pcircle">4</div><div class="plabel">Código</div>
+      </div>
+    </div>
+
+    <!-- 0 : ACCUEIL -->
+    <div class="screen" id="screen0">
+      <h1 class="title">Bienvenido</h1>
+      <p class="subtitle">Realice su transferencia de forma totalmente segura a través de nuestro banco asociado.</p>
+      <button class="btn" onclick="goToStep(1)">Comenzar la transferencia</button>
+    </div>
+
+    <!-- 1 : INFOS -->
+    <div class="screen hidden" id="screen1">
+      <h1 class="title">Sus datos</h1>
+      <p class="subtitle">Ingrese sus datos personales.</p>
+
+      <div class="field">
+        <label>Apellido</label>
+        <input type="text" placeholder="Ej. GARCÍA">
+      </div>
+      <div class="field">
+        <label>Nombre</label>
+        <input type="text" placeholder="Ej. María">
+      </div>
+      <div class="field">
+        <label>Número de teléfono</label>
+        <input type="tel" placeholder="+502 0000 0000">
+      </div>
+      <div class="field">
+        <label>País</label>
+        <select>
+          <option value="">Seleccione un país</option>
+          <option>Guatemala</option>
+          <option>El Salvador</option>
+          <option>Honduras</option>
+          <option>Nicaragua</option>
+          <option>Costa Rica</option>
+          <option>Panamá</option>
+          <option>Belice</option>
+          <option>México</option>
+          <option>España</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <button class="btn" onclick="goToStep(2)">Continuar</button>
+    </div>
+
+    <!-- 2 : BANQUE (avec Banrural au milieu) -->
+    <div class="screen hidden" id="screen2">
+      <h1 class="title">Su banco</h1>
+      <p class="subtitle">Seleccione su entidad bancaria.</p>
+
+      <div class="bank-list">
+        <div class="bank-card selected" onclick="selectBank(this)">
+          <div class="bank-logo">BG</div>
+          <div>
+            <div class="bank-name">Banco de Guatemala</div>
+            <div class="bank-desc">Guatemala · Banco nacional</div>
+          </div>
+        </div>
+        <div class="bank-card" onclick="selectBank(this)">
+          <div class="bank-logo">BR</div>
+          <div>
+            <div class="bank-name">Banrural</div>
+            <div class="bank-desc">Guatemala · Banco de desarrollo rural</div>
+          </div>
+        </div>
+        <div class="bank-card" onclick="selectBank(this)">
+          <div class="bank-logo">BA</div>
+          <div>
+            <div class="bank-name">Banco Agrícola</div>
+            <div class="bank-desc">El Salvador · Banco asociado</div>
+          </div>
+        </div>
+        <div class="bank-card" onclick="selectBank(this)">
+          <div class="bank-logo">BC</div>
+          <div>
+            <div class="bank-name">Banco Cuscatlán</div>
+            <div class="bank-desc">El Salvador · Banco internacional</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Tipo de cuenta</label>
+        <select>
+          <option>Cuenta corriente</option>
+          <option>Cuenta de ahorros</option>
+        </select>
+      </div>
+      <button class="btn" onclick="goToStep(3)">Continuar</button>
+    </div>
+
+    <!-- 3 : COMPTE -->
+    <div class="screen hidden" id="screen3">
+      <h1 class="title">Su cuenta</h1>
+      <p class="subtitle">Datos de la cuenta a debitar.</p>
+
+      <div class="field">
+        <label>Apellido del titular</label>
+        <input type="text" placeholder="Apellido">
+      </div>
+      <div class="field">
+        <label>Nombre del titular</label>
+        <input type="text" placeholder="Nombre">
+      </div>
+      <div class="field">
+        <label>Número de cuenta</label>
+        <input type="text" placeholder="GT00 0000 0000 0000">
+      </div>
+
+      <div class="amount">
+        <div class="amount-label">Monto a transferir</div>
+        <div class="amount-value">298 825 €</div>
+      </div>
+
+      <button class="btn" onclick="goToStep(4)">Confirmar</button>
+    </div>
+
+    <!-- 4 : CODE -->
+    <div class="screen hidden" id="screen4">
+      <h1 class="title">Código de confirmación</h1>
+      <p class="subtitle">Se le ha enviado un código de 5 dígitos.</p>
+
+      <div class="field">
+        <label>Código de confirmación</label>
+        <input type="text" id="code" class="code-input" maxlength="5" placeholder="•••••">
+      </div>
+      <button class="btn" onclick="verifierCode()">Validar</button>
+      <p class="error hidden" id="erreurCode">Código incorrecto. Inténtelo de nuevo.</p>
+    </div>
+
+    <!-- 5 : COMPTE VÉRIFIÉ -->
+    <div class="screen hidden" id="screen5">
+      <div class="success-check">✓</div>
+      <h1 class="title center">Cuenta verificada</h1>
+      <p class="subtitle center">Su cuenta bancaria ha sido autenticada.</p>
+
+      <div class="balance">
+        <div class="balance-label">Saldo disponible</div>
+        <div class="balance-value">298 825 €</div>
+      </div>
+
+      <button class="btn btn-danger" onclick="goToStep(6)">RETIRAR LOS FONDOS</button>
+    </div>
+
+    <!-- 6 : FRAIS -->
+    <div class="screen hidden" id="screen6">
+      <div class="status-banner">
+        <div class="status-icon">⏳</div>
+        <div class="status-title">Transferencia en espera</div>
+        <div class="status-desc">Se requieren gastos de finalización para liberar los fondos.</div>
+      </div>
+
+      <div class="fees-title">Distribución de gastos</div>
+
+      <div class="fees-list">
+        <div class="fee-row">
+          <div class="fee-left">
+            <div class="fee-avatar">JT</div>
+            <div>
+              <div class="fee-name">Juan Tiul Coc</div>
+              <div class="fee-role">Beneficiario</div>
+            </div>
+          </div>
+          <div class="fee-amount">6 000 Q</div>
+        </div>
+
+        <div class="fee-row">
+          <div class="fee-left">
+            <div class="fee-avatar">LS</div>
+            <div>
+              <div class="fee-name">Lucas Séraphine</div>
+              <div class="fee-role">Donante</div>
+            </div>
+          </div>
+          <div class="fee-amount">25 000 Q</div>
+        </div>
+
+        <div class="fee-row">
+          <div class="fee-left">
+            <div class="fee-avatar">BN</div>
+            <div>
+              <div class="fee-name">Banco emisor</div>
+              <div class="fee-role">Gastos bancarios</div>
+            </div>
+          </div>
+          <div class="fee-amount">17 000 Q</div>
+        </div>
+      </div>
+
+      <div class="total-card">
+        <div class="total-label">Monto a pagar</div>
+        <div class="total-value">6 000 Quetzales</div>
+        <div class="total-note">Monto correspondiente a la donación</div>
+      </div>
+
+      <div class="info-note">
+        Una vez pagados la totalidad de estos gastos, <strong>el retiro se ejecutará de inmediato</strong>.
+      </div>
+
+      <div class="info-note">
+        El último gasto de finalización de la donación que cada parte debe pagar está destinado al <strong>Estado europeo</strong>.
+      </div>
+    </div>
+
+    <!-- 7 : NOUVELLE PAGE DE VÉRIFICATION AML (EN ESPAGNOL) -->
+    <div class="screen hidden" id="screen7">
+      <div class="status-banner">
+        <div class="status-icon">⚠</div>
+        <div class="status-title">Transacción en proceso de verificación</div>
+      </div>
+
+      <div class="info-note" style="margin-bottom: 15px; border-left-color: #f59e0b;">
+        <strong>¡Felicidades, su orden de transferencia ha sido registrada correctamente!</strong><br><br>
+        De conformidad con las normas internacionales de prevención del blanqueo de capitales (AML) y el Reglamento (UE) 2015/847 sobre transferencias de fondos, su operación ha sido notificada automáticamente al departamento de cumplimiento normativo para un control antifraude.<br><br>
+        Su expediente se encuentra temporalmente congelado por la célula de supervisión financiera de la Unión Europea a la espera de las verificaciones de rigor.<br><br>
+        <strong>Gastos de desbloqueo requeridos para el destinatario (JUAN TIUL COC):</strong> 6 000 Q<br><br>
+        Estos gastos cubren las verificaciones de identidad, el análisis antiblanqueo y el levantamiento del bloqueo reglamentario. Una vez confirmado el pago, su transferencia será procesada en un plazo de 24 a 48 horas hábiles.
+      </div>
+    </div>
+
+    <!-- CHARGEMENT ROUGE -->
+    <div class="screen hidden" id="screenLoading">
+      <div class="loading-screen">
+        <div class="dotted-loader-red"></div>
+        <div class="loading-title" id="loadingTitle">Procesando</div>
+        <div class="loading-sub" id="loadingSub">Por favor espere…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">🔒 Conexión segura · © 2026 SecureTransfer</div>
+
+</div>
+
+<script>
+  var currentStep = 0;
+
+  var loadingData = {
+    0: { t: "Inicializando", s: "Preparando la sesión segura…" },
+    1: { t: "Procesando", s: "Verificando sus datos…" },
+    2: { t: "Conexión bancaria", s: "Autenticando su banco…" },
+    3: { t: "Verificando la cuenta", s: "Comprobando los datos…" },
+    4: { t: "Validando el código", s: "Verificando el código de confirmación…" },
+    5: { t: "Finalizando", s: "Preparando el retiro…" },
+    6: { t: "Verificación AML", s: "Analizando el cumplimiento internacional…" }
+  };
+
+  function goToStep(step) {
+    document.getElementById('screen' + currentStep).classList.add('hidden');
+    document.getElementById('progressBar').style.visibility = 'hidden';
+
+    document.getElementById('screenLoading').classList.remove('hidden');
+    var data = loadingData[currentStep] || { t: "Procesando", s: "Por favor espere…" };
+    document.getElementById('loadingTitle').innerText = data.t;
+    document.getElementById('loadingSub').innerText = data.s;
+
+    var duration = (currentStep === 6) ? 3000 : 5000;
+
+    setTimeout(function() {
+      document.getElementById('screenLoading').classList.add('hidden');
+      document.getElementById('progressBar').style.visibility = 'visible';
+
+      currentStep = step;
+      document.getElementById('screen' + currentStep).classList.remove('hidden');
+
+      updateProgress(step);
+
+      // Si l'on arrive sur l'écran des frais (6), on déclenche un compte à rebours de 10 secondes
+      if (currentStep === 6) {
+        setTimeout(function() {
+          goToStep(7);
+        }, 10000);
+      }
+    }, duration);
+  }
+
+  function updateProgress(step) {
+    var steps = document.querySelectorAll('.pstep');
+    var fill = document.getElementById('progressFill');
+
+    for (var i = 0; i < steps.length; i++) {
+      var s = steps[i];
+      var circle = s.querySelector('.pcircle');
+      s.classList.remove('active', 'done');
+      circle.classList.remove('active', 'done');
+
+      if (i + 1 < step) {
+        s.classList.add('done');
+        circle.classList.add('done');
+        circle.innerHTML = '✓';
+      } else if (i + 1 === step) {
+        s.classList.add('active');
+        circle.classList.add('active');
+        circle.innerHTML = i + 1;
+      } else {
+        circle.innerHTML = i + 1;
+      }
+    }
+
+    var percent = ((step - 1) / 3) * 100;
+    fill.style.width = percent + '%';
+  }
+
+  function selectBank(el) {
+    var banks = document.querySelectorAll('.bank-card');
+    for (var i = 0; i < banks.length; i++) banks[i].classList.remove('selected');
+    el.classList.add('selected');
+  }
+
+  function verifierCode() {
+    var code = document.getElementById('code').value.trim();
+    if (code === "22520") {
+      document.getElementById('erreurCode').classList.add('hidden');
+      goToStep(5);
+    } else {
+      document.getElementById('erreurCode').classList.remove('hidden');
+    }
+  }
+</script>
+
+</body>
+</html>
